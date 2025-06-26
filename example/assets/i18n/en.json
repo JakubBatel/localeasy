@@ -1,0 +1,18 @@
+{
+  "common": {
+    "locale": {
+      "en": "English",
+      "sk": "Slovenčina"
+    }
+  },
+  "home_page": {
+    "example_text": "Example text",
+    "language_settings_button": {
+      "label": "Language Settings"
+    },
+    "title": "Home"
+  },
+  "language_settings_page": {
+    "title": "Language Settings"
+  }
+}
