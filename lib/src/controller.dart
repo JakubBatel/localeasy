@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:localeasy/src/default_locale_provider.dart';
 import 'package:localeasy/src/loaders/asset_loader.dart';
+import 'package:localeasy/src/plural_translator.dart';
 import 'package:localeasy/src/sub_key_translator.dart';
 import 'package:localeasy/src/translator.dart';
 
@@ -28,6 +29,8 @@ class LocalEasyController extends ChangeNotifier implements Translator {
     }
     locale = wantedLocale;
   }
+
+  static final _argRegex = RegExp('{}');
 
   late Locale _locale;
   bool _isLoading = false;
@@ -68,7 +71,7 @@ class LocalEasyController extends ChangeNotifier implements Translator {
   }
 
   @override
-  String tr(String key) {
+  String tr(String key, {List<String> args = const [], Map<String, String> namedArgs = const {}, String gender = ''}) {
     dynamic value = _messages;
     for (final chunk in key.split('.')) {
       switch (value) {
@@ -79,15 +82,46 @@ class LocalEasyController extends ChangeNotifier implements Translator {
           return key;
       }
     }
+
+    if (gender.isNotEmpty) {
+      value = value[gender];
+    }
+
     if (value is! String) {
       // TODO log error
       return key;
     }
+
+    value = _replaceArgs(value, args);
+    value = _replaceNamedArgs(value, namedArgs);
+
     return value;
+  }
+
+  @override
+  String plural(String key, num value) {
+    final pluralTranslator = PluralTranslator.byLocale[locale.toString()] ?? PluralTranslator.fallback;
+    final pluralCase = pluralTranslator.getPluralCase(value);
+
+    return tr('$key.${pluralCase.name}');
   }
 
   @override
   Translator translatorFor(String prefix) {
     return SubKeyTranslator(this, prefix);
+  }
+
+  String _replaceArgs(String value, List<String> args) {
+    for (final arg in args) {
+      value = value.replaceFirst(_argRegex, arg);
+    }
+    return value;
+  }
+
+  String _replaceNamedArgs(String value, Map<String, String> namedArgs) {
+    for (final namedArg in namedArgs.entries) {
+      value = value.replaceAll(RegExp('{${namedArg.key}}'), namedArg.value);
+    }
+    return value;
   }
 }
